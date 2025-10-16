@@ -5,7 +5,6 @@ package duck
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strings"
 
 	"github.com/apache/arrow/go/v17/arrow/flight/flightsql/driver"
