@@ -5,6 +5,7 @@ package duck
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/apache/arrow/go/v17/arrow/flight/flightsql/driver"
@@ -28,6 +29,10 @@ func (e *EphemeralConnection) driver() string {
 	return "duckdb"
 }
 
+func (e *EphemeralConnection) withPreQuery(query string) string {
+	return "LOAD httpfs; LOAD airport; LOAD http_client; " + query
+}
+
 func (e *EphemeralConnection) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
 	conn, err := sqlx.Open(e.driver(), e.config.ToDBConnectionURI())
 
@@ -40,7 +45,7 @@ func (e *EphemeralConnection) QueryContext(ctx context.Context, query string, ar
 		}
 	}(conn)
 
-	return conn.QueryContext(ctx, query, args...) //nolint
+	return conn.QueryContext(ctx, e.withPreQuery(query), args...) //nolint
 }
 
 func (e *EphemeralConnection) ExecContext(ctx context.Context, sql string, arguments ...any) (sql.Result, error) {
@@ -54,7 +59,8 @@ func (e *EphemeralConnection) ExecContext(ctx context.Context, sql string, argum
 		}
 	}(conn)
 
-	return conn.ExecContext(ctx, sql, arguments...)
+	fmt.Println(sql)
+	return conn.ExecContext(ctx, e.withPreQuery(sql), arguments...)
 }
 
 func (e *EphemeralConnection) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
@@ -70,5 +76,5 @@ func (e *EphemeralConnection) QueryRowContext(ctx context.Context, query string,
 		}
 	}(conn)
 
-	return conn.QueryRowContext(ctx, query, args...)
+	return conn.QueryRowContext(ctx, e.withPreQuery(query), args...)
 }
