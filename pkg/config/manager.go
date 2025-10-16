@@ -49,6 +49,7 @@ type Connections struct {
 	Kafka               []KafkaConnection               `yaml:"kafka,omitempty" json:"kafka,omitempty" mapstructure:"kafka"`
 	DuckDB              []DuckDBConnection              `yaml:"duckdb,omitempty" json:"duckdb,omitempty" mapstructure:"duckdb"`
 	MotherDuck          []MotherduckConnection          `yaml:"motherduck,omitempty" json:"motherduck,omitempty" mapstructure:"motherduck"`
+	DuckFlight          []DuckFlightConnection          `yaml:"duckflight,omitempty" json:"duckflight,omitempty" mapstructure:"duckflight"`
 	ClickHouse          []ClickHouseConnection          `yaml:"clickhouse,omitempty" json:"clickhouse,omitempty" mapstructure:"clickhouse"`
 	Hubspot             []HubspotConnection             `yaml:"hubspot,omitempty" json:"hubspot,omitempty" mapstructure:"hubspot"`
 	Intercom            []IntercomConnection            `yaml:"intercom,omitempty" json:"intercom,omitempty" mapstructure:"intercom"`

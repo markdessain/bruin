@@ -5,7 +5,10 @@ package duck
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 
+	"github.com/apache/arrow/go/v17/arrow/flight/flightsql/driver"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -14,11 +17,21 @@ type EphemeralConnection struct {
 }
 
 func NewEphemeralConnection(c DuckDBConfig) (*EphemeralConnection, error) {
+	// _ = &driver.Driver{}
 	return &EphemeralConnection{config: c}, nil
 }
 
+func (e *EphemeralConnection) driver() string {
+	if strings.HasPrefix(e.config.ToDBConnectionURI(), "flight") {
+		_ = &driver.Driver{}
+		return "flightsql"
+	}
+	return "duckdb"
+}
+
 func (e *EphemeralConnection) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
-	conn, err := sqlx.Open("duckdb", e.config.ToDBConnectionURI())
+	conn, err := sqlx.Open(e.driver(), e.config.ToDBConnectionURI())
+
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +45,7 @@ func (e *EphemeralConnection) QueryContext(ctx context.Context, query string, ar
 }
 
 func (e *EphemeralConnection) ExecContext(ctx context.Context, sql string, arguments ...any) (sql.Result, error) {
-	conn, err := sqlx.Open("duckdb", e.config.ToDBConnectionURI())
+	conn, err := sqlx.Open(e.driver(), e.config.ToDBConnectionURI())
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +59,7 @@ func (e *EphemeralConnection) ExecContext(ctx context.Context, sql string, argum
 }
 
 func (e *EphemeralConnection) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	conn, err := sqlx.Open("duckdb", e.config.ToDBConnectionURI())
+	conn, err := sqlx.Open(e.driver(), e.config.ToDBConnectionURI())
 	if err != nil {
 		// Cannot return error from this function signature, so we panic.
 		// This is not ideal, but it's the best we can do with the current interface.

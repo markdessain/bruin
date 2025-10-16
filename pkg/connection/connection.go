@@ -1041,6 +1041,30 @@ func (m *Manager) AddDuckDBConnectionFromConfig(connection *config.DuckDBConnect
 	return nil
 }
 
+func (m *Manager) AddDuckFlightConnectionFromConfig(connection *config.DuckFlightConnection) error {
+	m.mutex.Lock()
+	if m.DuckDB == nil {
+		m.DuckDB = make(map[string]*duck.Client)
+	}
+	m.mutex.Unlock()
+
+	client, err := duck.NewClient(duck.FlightConfig{
+		Host: connection.Host,
+	})
+	if err != nil {
+		return err
+	}
+
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.DuckDB[connection.Name] = client
+	m.availableConnections[connection.Name] = client
+	m.AllConnectionDetails[connection.Name] = connection
+
+	return nil
+}
+
 func (m *Manager) AddMotherduckConnectionFromConfig(connection *config.MotherduckConnection) error {
 	m.mutex.Lock()
 	if m.DuckDB == nil {
@@ -2325,6 +2349,7 @@ func NewManagerFromConfig(cm *config.Config) (config.ConnectionAndDetailsGetter,
 	processConnections(cm.SelectedEnvironment.Connections.GoogleSheets, connectionManager.AddGoogleSheetsConnectionFromConfig, &wg, &errList, &mu)
 	processConnections(cm.SelectedEnvironment.Connections.DuckDB, connectionManager.AddDuckDBConnectionFromConfig, &wg, &errList, &mu)
 	processConnections(cm.SelectedEnvironment.Connections.MotherDuck, connectionManager.AddMotherduckConnectionFromConfig, &wg, &errList, &mu)
+	processConnections(cm.SelectedEnvironment.Connections.DuckFlight, connectionManager.AddDuckFlightConnectionFromConfig, &wg, &errList, &mu)
 	processConnections(cm.SelectedEnvironment.Connections.ClickHouse, connectionManager.AddClickHouseConnectionFromConfig, &wg, &errList, &mu)
 	processConnections(cm.SelectedEnvironment.Connections.Hubspot, connectionManager.AddHubspotConnectionFromConfig, &wg, &errList, &mu)
 	processConnections(cm.SelectedEnvironment.Connections.Chess, connectionManager.AddChessConnectionFromConfig, &wg, &errList, &mu)

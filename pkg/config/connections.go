@@ -445,6 +445,15 @@ func (d DuckDBConnection) GetName() string {
 	return d.Name
 }
 
+type DuckFlightConnection struct {
+	Name string `yaml:"name,omitempty" json:"name" mapstructure:"name"`
+	Host string `yaml:"host,omitempty" json:"host" mapstructure:"host"`
+}
+
+func (m DuckFlightConnection) GetName() string {
+	return m.Name
+}
+
 type MotherduckConnection struct {
 	Name     string `yaml:"name,omitempty" json:"name" mapstructure:"name"`
 	Token    string `yaml:"token,omitempty" json:"token" mapstructure:"token"`

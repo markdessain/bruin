@@ -33,3 +33,18 @@ func (c MotherDuckConfig) GetIngestrURI() string {
 	}
 	return "motherduck://?token=" + c.Token
 }
+
+type FlightConfig struct {
+	Host string
+}
+
+// ToDBConnectionURI returns a connection URI to be used with the pgx package.
+func (c FlightConfig) ToDBConnectionURI() string {
+	return c.Host
+}
+
+func (c FlightConfig) GetIngestrURI() string {
+	connString := ""
+
+	return connString
+}
