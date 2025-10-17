@@ -35,7 +35,17 @@ jobs:
 
     - name: Check current GLIBC version
       run: ldd --version
-    
+
+    - name: Add Debian Bookworm repository with keys
+      run: |
+        # Import Debian archive keys
+        sudo apt-get install -y debian-archive-keyring || true
+        wget -qO- https://ftp-master.debian.org/keys/archive-key-12.asc | sudo tee /etc/apt/trusted.gpg.d/debian-archive-bookworm.asc
+        
+        # Add Debian Bookworm repository
+        echo "deb [signed-by=/etc/apt/trusted.gpg.d/debian-archive-bookworm.asc] http://deb.debian.org/debian bookworm main" | sudo tee /etc/apt/sources.list.d/debian-bookworm.list
+        sudo apt-get update
+        
     - name: Add Debian Bookworm repository
       run: |
         echo "deb http://deb.debian.org/debian bookworm main" | sudo tee /etc/apt/sources.list.d/debian-bookworm.list
