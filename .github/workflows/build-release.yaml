@@ -28,13 +28,26 @@ jobs:
         path: bruin-macos-arm64
 
   build-linux:
-    runs-on: ubuntu-latest 
-    container:
-      image: debian:bookworm
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Check current GLIBC version
+      run: ldd --version
+    
+    - name: Add Debian Bookworm repository
+      run: |
+        echo "deb http://deb.debian.org/debian bookworm main" | sudo tee /etc/apt/sources.list.d/debian-bookworm.list
+        sudo apt-get update
+    
+    - name: Install GLIBC 2.36 from Debian
+      run: |
+        sudo apt-get install -y libc6=2.36-9+deb12u* libc6-dev=2.36-9+deb12u*
+    
+    - name: Verify new GLIBC version
+      run: ldd --version
+      
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
