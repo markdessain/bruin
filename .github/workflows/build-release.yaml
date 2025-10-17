@@ -27,37 +27,37 @@ jobs:
         name: bruin-macos-arm64
         path: bruin-macos-arm64
 
-  # build-linux:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v4
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-  #   - name: Set up Go
-  #     uses: actions/setup-go@v5
-  #     with:
-  #       go-version: '1.23'
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
 
-  #   - name: Build for Linux ARM64
-  #     env:
-  #       GOOS: linux
-  #       GOARCH: arm64
-  #       CGO_ENABLED: 1
-  #       CC: aarch64-linux-gnu-gcc
-  #     run: |
-  #       sudo apt-get update
-  #       sudo apt-get install -y gcc-aarch64-linux-gnu
-  #       go build -o bruin-linux-arm64 main.go
+    - name: Build for Linux ARM64
+      env:
+        GOOS: linux
+        GOARCH: arm64
+        CGO_ENABLED: 1
+        CC: aarch64-linux-gnu-gcc
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-aarch64-linux-gnu
+        go build -o bruin-linux-arm64 main.go
 
-  #   - name: Upload Linux binary
-  #     uses: actions/upload-artifact@v4
-  #     with:
-  #       name: bruin-linux-arm64
-  #       path: bruin-linux-arm64
+    - name: Upload Linux binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: bruin-linux-arm64
+        path: bruin-linux-arm64
 
   create-release:
-    needs: [build-macos]
-    # needs: [build-macos, build-linux]
+    # needs: [build-macos]
+    needs: [build-macos, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -67,18 +67,17 @@ jobs:
       with:
         name: bruin-macos-arm64
 
-    # - name: Download Linux binary
-    #   uses: actions/download-artifact@v4
-    #   with:
-    #     name: bruin-linux-arm64
+    - name: Download Linux binary
+      uses: actions/download-artifact@v4
+      with:
+        name: bruin-linux-arm64
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
           bruin-macos-arm64
+          bruin-linux-arm64
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-          # bruin-linux-arm64
