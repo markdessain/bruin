@@ -28,36 +28,17 @@ jobs:
         path: bruin-macos-arm64
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest 
+    container:
+      image: debian:bookworm
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Check current GLIBC version
-      run: ldd --version
+    - name: cert
+      run: |
+        sudo apt-get update && sudo apt-get install -y ca-certificates && sudo apt-get update
 
-    - name: Add Debian Bookworm repository with keys
-      run: |
-        # Import Debian archive keys
-        sudo apt-get install -y debian-archive-keyring || true
-        wget -qO- https://ftp-master.debian.org/keys/archive-key-12.asc | sudo tee /etc/apt/trusted.gpg.d/debian-archive-bookworm.asc
-        
-        # Add Debian Bookworm repository
-        echo "deb [signed-by=/etc/apt/trusted.gpg.d/debian-archive-bookworm.asc] http://deb.debian.org/debian bookworm main" | sudo tee /etc/apt/sources.list.d/debian-bookworm.list
-        sudo apt-get update
-        
-    - name: Add Debian Bookworm repository
-      run: |
-        echo "deb http://deb.debian.org/debian bookworm main" | sudo tee /etc/apt/sources.list.d/debian-bookworm.list
-        sudo apt-get update
-    
-    - name: Install GLIBC 2.36 from Debian
-      run: |
-        sudo apt-get install -y libc6=2.36-9+deb12u* libc6-dev=2.36-9+deb12u*
-    
-    - name: Verify new GLIBC version
-      run: ldd --version
-      
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
