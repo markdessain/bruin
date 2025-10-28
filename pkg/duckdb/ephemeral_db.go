@@ -5,7 +5,11 @@ package duck
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"regexp"
+	"strings"
 
+	"github.com/apache/arrow/go/v17/arrow/flight/flightsql/driver"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -14,11 +18,38 @@ type EphemeralConnection struct {
 }
 
 func NewEphemeralConnection(c DuckDBConfig) (*EphemeralConnection, error) {
+	// _ = &driver.Driver{}
 	return &EphemeralConnection{config: c}, nil
 }
 
+func (e *EphemeralConnection) driver() string {
+	if strings.HasPrefix(e.config.ToDBConnectionURI(), "flight") {
+		_ = &driver.Driver{}
+		return "flightsql"
+	}
+	return "duckdb"
+}
+
+func (e *EphemeralConnection) withPreQuery(query string) string {
+
+	loadQuery, err := regexp.Compile("-- (LOAD [a-zA-Z]*;)")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if loadQuery != nil {
+		for _, m := range loadQuery.FindAllStringSubmatch(query, -1) {
+			query = m[1] + "\n" + query
+		}
+	}
+
+	return query
+
+}
+
 func (e *EphemeralConnection) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
-	conn, err := sqlx.Open("duckdb", e.config.ToDBConnectionURI())
+	conn, err := sqlx.Open(e.driver(), e.config.ToDBConnectionURI())
+
 	if err != nil {
 		return nil, err
 	}
@@ -28,11 +59,11 @@ func (e *EphemeralConnection) QueryContext(ctx context.Context, query string, ar
 		}
 	}(conn)
 
-	return conn.QueryContext(ctx, query, args...) //nolint
+	return conn.QueryContext(ctx, e.withPreQuery(query), args...) //nolint
 }
 
 func (e *EphemeralConnection) ExecContext(ctx context.Context, sql string, arguments ...any) (sql.Result, error) {
-	conn, err := sqlx.Open("duckdb", e.config.ToDBConnectionURI())
+	conn, err := sqlx.Open(e.driver(), e.config.ToDBConnectionURI())
 	if err != nil {
 		return nil, err
 	}
@@ -42,11 +73,12 @@ func (e *EphemeralConnection) ExecContext(ctx context.Context, sql string, argum
 		}
 	}(conn)
 
-	return conn.ExecContext(ctx, sql, arguments...)
+	fmt.Println(sql)
+	return conn.ExecContext(ctx, e.withPreQuery(sql), arguments...)
 }
 
 func (e *EphemeralConnection) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	conn, err := sqlx.Open("duckdb", e.config.ToDBConnectionURI())
+	conn, err := sqlx.Open(e.driver(), e.config.ToDBConnectionURI())
 	if err != nil {
 		// Cannot return error from this function signature, so we panic.
 		// This is not ideal, but it's the best we can do with the current interface.
@@ -58,5 +90,5 @@ func (e *EphemeralConnection) QueryRowContext(ctx context.Context, query string,
 		}
 	}(conn)
 
-	return conn.QueryRowContext(ctx, query, args...)
+	return conn.QueryRowContext(ctx, e.withPreQuery(query), args...)
 }
