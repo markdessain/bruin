@@ -11,6 +11,7 @@ import (
 
 	"github.com/apache/arrow/go/v17/arrow/flight/flightsql/driver"
 	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 )
 
 type EphemeralConnection struct {
@@ -31,6 +32,15 @@ func (e *EphemeralConnection) driver() string {
 }
 
 func (e *EphemeralConnection) withPreQuery(query string) string {
+
+	envMap, err := godotenv.Read(".env")
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		for key, value := range envMap {
+			query = strings.ReplaceAll(query, fmt.Sprintf("${%s}", key), value)
+		}
+	}
 
 	loadQuery, err := regexp.Compile("-- (LOAD [a-zA-Z]*;)")
 	if err != nil {
