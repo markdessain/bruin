@@ -35,7 +35,6 @@ func (e *EphemeralConnection) withPreQuery(query string) string {
 
 	envMap, err := godotenv.Read(".env")
 	if err != nil {
-		fmt.Println(err)
 	} else {
 		for key, value := range envMap {
 			query = strings.ReplaceAll(query, fmt.Sprintf("${%s}", key), value)
@@ -44,7 +43,6 @@ func (e *EphemeralConnection) withPreQuery(query string) string {
 
 	loadQuery, err := regexp.Compile("-- (LOAD [a-zA-Z]*;)")
 	if err != nil {
-		fmt.Println(err)
 	}
 
 	if loadQuery != nil {
@@ -55,7 +53,6 @@ func (e *EphemeralConnection) withPreQuery(query string) string {
 
 	loadQuery2, err := regexp.Compile("/\\* (LOAD [a-zA-Z]*;) \\*/")
 	if err != nil {
-		fmt.Println(err)
 	}
 
 	if loadQuery2 != nil {
