@@ -43,6 +43,17 @@ func (e *EphemeralConnection) withPreQuery(query string) string {
 		}
 	}
 
+	loadQuery2, err := regexp.Compile("/\\* (LOAD [a-zA-Z]*;) \\*/")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if loadQuery2 != nil {
+		for _, m := range loadQuery2.FindAllStringSubmatch(query, -1) {
+			query = m[1] + "\n" + query
+		}
+	}
+
 	return query
 
 }
