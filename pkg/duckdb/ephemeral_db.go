@@ -39,6 +39,7 @@ func (e *EphemeralConnection) withPreQuery(query string) string {
 		}
 	}
 
+	query = strings.ReplaceAll(query, "/*", "\n/*")
 	query = strings.ReplaceAll(query, "*/", "*/\n")
 	lines := strings.Split(query, "\n")
 
