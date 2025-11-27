@@ -2,6 +2,8 @@ package query
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -161,6 +163,52 @@ type WholeFileExtractor struct {
 }
 
 func (f *WholeFileExtractor) ExtractQueriesFromString(content string) ([]*Query, error) {
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Error getting working directory: %v\n", err)
+		os.Exit(1)
+	}
+
+	setupQuery, err := regexp.Compile("--[ ]*setup:[ ]*(.*)")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if setupQuery != nil {
+
+		matches := setupQuery.FindAllStringSubmatch(content, -1)
+
+		if len(matches) == 1 {
+			x := matches[0][1]
+			x = strings.TrimPrefix(x, "./")
+			c, err := os.ReadFile(pwd + "/" + x)
+			if err == nil {
+				content = strings.ReplaceAll(content, matches[0][0], "/* @setup\n"+string(c)+"\n@setup */\n")
+			}
+		}
+
+	}
+
+	teardownQuery, err := regexp.Compile("--[ ]*teardown:[ ]*(.*)")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if teardownQuery != nil {
+		matches := teardownQuery.FindAllStringSubmatch(content, -1)
+
+		if len(matches) == 1 {
+			x := matches[0][1]
+			x = strings.TrimPrefix(x, "./")
+			c, err := os.ReadFile(pwd + "/" + x)
+			if err == nil {
+				content = strings.ReplaceAll(content, matches[0][0], "/* @teardown\n"+string(c)+"\n@teardown */\n")
+			}
+		}
+
+	}
+
 	render, err := f.Renderer.Render(strings.TrimSpace(content))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not render file while extracting the queries from the whole file")

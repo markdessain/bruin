@@ -6,8 +6,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
-	"regexp"
 	"strings"
 
 	"github.com/apache/arrow/go/v17/arrow/flight/flightsql/driver"
@@ -33,7 +31,6 @@ func (e *EphemeralConnection) driver() string {
 }
 
 func (e *EphemeralConnection) withPreQuery(query string) string {
-
 	envMap, err := godotenv.Read(".env")
 	if err != nil {
 	} else {
@@ -42,48 +39,35 @@ func (e *EphemeralConnection) withPreQuery(query string) string {
 		}
 	}
 
-	pwd, err := os.Getwd()
-	if err != nil {
-		fmt.Printf("Error getting working directory: %v\n", err)
-	} else {
-		fmt.Printf("Current working directory: %s\n", pwd)
-	}
+	query = strings.ReplaceAll(query, "*/", "*/\n")
+	lines := strings.Split(query, "\n")
 
-	setupQuery, err := regexp.Compile("--[ ]*setup:[ ]*(.*)")
-	if err != nil {
-		fmt.Println(err)
-	}
+	setup := ""
+	teardown := ""
+	output := ""
+	startSetup := false
+	startTeardown := false
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
 
-	if setupQuery != nil {
-		for _, m := range setupQuery.FindAllStringSubmatch(query, -1) {
-			x := m[1]
-			x = strings.TrimPrefix(x, "./")
-			query = strings.ReplaceAll(query, m[0], "")
-			content, err := os.ReadFile(pwd + "/" + x)
-			if err == nil {
-				query = query + "\n" + string(content)
-			}
+		if line == "/* @setup" {
+			startSetup = true
+		} else if line == "@setup */" {
+			startSetup = false
+		} else if line == "/* @teardown" {
+			startTeardown = true
+		} else if line == "@teardown */" {
+			startTeardown = false
+		} else if startSetup {
+			setup = setup + line + "\n"
+		} else if startTeardown {
+			teardown = teardown + line + "\n"
+		} else {
+			output = output + line + "\n"
 		}
 	}
 
-	teardownQuery, err := regexp.Compile("--[ ]*teardown:[ ]*(.*)")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	if teardownQuery != nil {
-		for _, m := range teardownQuery.FindAllStringSubmatch(query, -1) {
-			x := m[1]
-			x = strings.TrimPrefix(x, "./")
-			query = strings.ReplaceAll(query, m[0], "")
-			content, err := os.ReadFile(pwd + "/" + x)
-			if err == nil {
-				query = query + "\n" + string(content)
-			}
-		}
-	}
-
-	return query
+	return setup + "\n" + output + "\n" + teardown
 }
 
 func (e *EphemeralConnection) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
@@ -112,7 +96,6 @@ func (e *EphemeralConnection) ExecContext(ctx context.Context, sql string, argum
 		}
 	}(conn)
 
-	fmt.Println(sql)
 	return conn.ExecContext(ctx, e.withPreQuery(sql), arguments...)
 }
 
