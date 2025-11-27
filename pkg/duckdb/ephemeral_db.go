@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -41,28 +42,48 @@ func (e *EphemeralConnection) withPreQuery(query string) string {
 		}
 	}
 
-	loadQuery, err := regexp.Compile("-- (LOAD [a-zA-Z]*;)")
+	pwd, err := os.Getwd()
 	if err != nil {
+		fmt.Printf("Error getting working directory: %v\n", err)
+	} else {
+		fmt.Printf("Current working directory: %s\n", pwd)
 	}
 
-	if loadQuery != nil {
-		for _, m := range loadQuery.FindAllStringSubmatch(query, -1) {
-			query = m[1] + "\n" + query
+	setupQuery, err := regexp.Compile("--[ ]*setup:[ ]*(.*)")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if setupQuery != nil {
+		for _, m := range setupQuery.FindAllStringSubmatch(query, -1) {
+			x := m[1]
+			x = strings.TrimPrefix(x, "./")
+			query = strings.ReplaceAll(query, m[0], "")
+			content, err := os.ReadFile(pwd + "/" + x)
+			if err == nil {
+				query = query + "\n" + string(content)
+			}
 		}
 	}
 
-	loadQuery2, err := regexp.Compile("/\\* (LOAD [a-zA-Z]*;) \\*/")
+	teardownQuery, err := regexp.Compile("--[ ]*teardown:[ ]*(.*)")
 	if err != nil {
+		fmt.Println(err)
 	}
 
-	if loadQuery2 != nil {
-		for _, m := range loadQuery2.FindAllStringSubmatch(query, -1) {
-			query = m[1] + "\n" + query
+	if teardownQuery != nil {
+		for _, m := range teardownQuery.FindAllStringSubmatch(query, -1) {
+			x := m[1]
+			x = strings.TrimPrefix(x, "./")
+			query = strings.ReplaceAll(query, m[0], "")
+			content, err := os.ReadFile(pwd + "/" + x)
+			if err == nil {
+				query = query + "\n" + string(content)
+			}
 		}
 	}
 
 	return query
-
 }
 
 func (e *EphemeralConnection) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
