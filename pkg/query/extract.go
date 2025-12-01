@@ -182,28 +182,45 @@ func (f *WholeFileExtractor) ExtractQueriesFromString(content string) ([]*Query,
 		if len(matches) == 1 {
 			x := matches[0][1]
 			x = strings.TrimPrefix(x, "./")
-			c, err := os.ReadFile(pwd + "/" + x)
-			if err == nil {
-				content = strings.ReplaceAll(content, matches[0][0], "/* @setup\n"+string(c)+"\n@setup */\n")
+
+			prefix := "/"
+			i := 0
+			for i < 4 {
+
+				c, err := os.ReadFile(pwd + "/" + prefix + x)
+				if err == nil {
+					i = 4
+					content = strings.ReplaceAll(content, matches[0][0], "/* @setup\n"+string(c)+"\n@setup */\n")
+
+				}
 			}
+
 		}
 
-	}
+		teardownQuery, err := regexp.Compile("--[ ]*teardown:[ ]*(.*)")
+		if err != nil {
+			fmt.Println(err)
+		}
 
-	teardownQuery, err := regexp.Compile("--[ ]*teardown:[ ]*(.*)")
-	if err != nil {
-		fmt.Println(err)
-	}
+		if teardownQuery != nil {
+			matches := teardownQuery.FindAllStringSubmatch(content, -1)
 
-	if teardownQuery != nil {
-		matches := teardownQuery.FindAllStringSubmatch(content, -1)
+			if len(matches) == 1 {
+				x := matches[0][1]
+				x = strings.TrimPrefix(x, "./")
+				prefix := "/"
+				i := 0
+				for i < 4 {
 
-		if len(matches) == 1 {
-			x := matches[0][1]
-			x = strings.TrimPrefix(x, "./")
-			c, err := os.ReadFile(pwd + "/" + x)
-			if err == nil {
-				content = strings.ReplaceAll(content, matches[0][0], "/* @teardown\n"+string(c)+"\n@teardown */\n")
+					c, err := os.ReadFile(pwd + "/" + prefix + x)
+					if err == nil {
+						i = 4
+						content = strings.ReplaceAll(content, matches[0][0], "/* @teardown\n"+string(c)+"\n@teardown */\n")
+					}
+
+					prefix = "../" + prefix
+					i += 1
+				}
 			}
 		}
 
