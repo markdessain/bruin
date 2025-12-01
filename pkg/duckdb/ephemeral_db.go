@@ -31,12 +31,21 @@ func (e *EphemeralConnection) driver() string {
 }
 
 func (e *EphemeralConnection) withPreQuery(query string) string {
-	envMap, err := godotenv.Read(".env")
-	if err != nil {
-	} else {
-		for key, value := range envMap {
-			query = strings.ReplaceAll(query, fmt.Sprintf("${%s}", key), value)
+
+	prefix := ""
+	i := 0
+	for i < 4 {
+		envMap, err := godotenv.Read(prefix + ".env")
+		if err != nil {
+		} else {
+			i = 4
+			for key, value := range envMap {
+				query = strings.ReplaceAll(query, fmt.Sprintf("${%s}", key), value)
+			}
 		}
+
+		prefix = "../" + prefix
+		i += 1
 	}
 
 	query = strings.ReplaceAll(query, "/*", "\n/*")
