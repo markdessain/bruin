@@ -186,13 +186,15 @@ func (f *WholeFileExtractor) ExtractQueriesFromString(content string) ([]*Query,
 			prefix := "/"
 			i := 0
 			for i < 4 {
-
 				c, err := os.ReadFile(pwd + "/" + prefix + x)
 				if err == nil {
 					i = 4
 					content = strings.ReplaceAll(content, matches[0][0], "/* @setup\n"+string(c)+"\n@setup */\n")
 
 				}
+
+				prefix = "../" + prefix
+				i += 1
 			}
 
 		}
